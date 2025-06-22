@@ -1,0 +1,12 @@
+configurations:
+  - name: "1. Aligned Spirals (0° phase offset)"
+    params:
+      outer_radius: 15
+      inner_radius: 10
+      height: 12
+      num_turns: 8
+      phase_offset: 0
+      target_spacing: 0.9
+      arc_span_deg: 30
+      arc_density: 10
+      struct_lines: 10
