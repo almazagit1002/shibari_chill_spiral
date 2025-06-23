@@ -5,7 +5,6 @@ Main script to run double conical spiral analysis and visualization
 
 import yaml
 import numpy as np
-import matplotlib.pyplot as plt
 from spiral_calculations import DoubleConicalSpiral
 from spiral_plots import SpiralPlotter
 
@@ -200,21 +199,13 @@ def main():
         short_name = name.split('.')[1].strip() if '.' in name else name
         print(f"{short_name:<30} {net_length:>12.4f}")
 
-    # Method Accuracy Summary
-    print(f"\nMETHOD ACCURACY COMPARISON:")
-    print("=" * 60)
-    print(f"{'Method':<25} {'Avg Difference from Analytical':<30}")
-    print("-" * 60)
-
-    if all_results:
-        avg_num_diff = np.mean([comp['differences']['analytical_vs_numerical'] for _, comp, _ in all_results])
-        avg_circ_diff = np.mean([comp['differences']['analytical_vs_circular'] for _, comp, _ in all_results])
-        print(f"{'Numerical':<25} {avg_num_diff:<30.6f}")
-        print(f"{'Circular Approximation':<25} {avg_circ_diff:<30.6f}")
+   
+    
 
     # Show all plots
-    print("\nDisplaying all visualizations...")
-    plt.show()
+    print("\nSaving all visualizations...")
+    fig_combined.savefig("Combined_visuals.pdf")
+    anular_net.savefig('net_approx.pdf')
 
     print("\nAnalysis complete!")
 
