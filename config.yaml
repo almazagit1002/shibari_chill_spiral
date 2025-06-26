@@ -1,5 +1,5 @@
 configurations:
-  - name: "1. Aligned Spirals (0° phase offset)"
+  - name: "Aligned Spirals"
     params:
       outer_radius: 15
       inner_radius: 10
