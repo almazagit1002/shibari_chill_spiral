@@ -45,14 +45,14 @@ class SpiralPlotter:
                   c='red', s=30, alpha=0.8, zorder=5)
         
         # Formatting
-        ax.set_xlabel('X Position', fontsize=12)
-        ax.set_ylabel('Z (Height)', fontsize=12)
+        ax.set_xlabel('X Position', fontsize=16)
+        ax.set_ylabel('Z (Height)', fontsize=16)
         ax.set_title(f'XZ Plane View - Double Conical Spiral\n'
                     f'Outer R: {self.spiral.R_outer}, Inner R: {self.spiral.R_inner}, Height: {self.spiral.h}, '
                     f'Turns: {self.spiral.n*self.spiral.h/(2*np.pi):.1f}, Phase: {self.spiral.phase_offset*180/np.pi:.0f}°', 
                     fontsize=14)
         
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=16)
         ax.grid(True, alpha=0.3)
         ax.set_aspect('equal')
         
@@ -169,10 +169,10 @@ class SpiralPlotter:
         ax1.scatter(x_inner[sample_indices], y_inner[sample_indices], z_inner[sample_indices],
                     c='red', s=40, alpha=0.8)
 
-        ax1.set_xlabel('X')
-        ax1.set_ylabel('Y')
-        ax1.set_zlabel('Z (Height)')
-        ax1.set_title('3D View')
+        ax1.set_xlabel('X', fontsize=16)
+        ax1.set_ylabel('Y', fontsize=16)
+        ax1.set_zlabel('Z (Height)', fontsize=16)
+        ax1.set_title('3D View', fontsize=20)
 
         max_range = max(self.spiral.R_outer, self.spiral.h)
         ax1.set_xlim([-max_range, max_range])
@@ -190,9 +190,9 @@ class SpiralPlotter:
         ax2.scatter(x_inner[sample_indices_xy], y_inner[sample_indices_xy],
                     c='red', s=30, alpha=0.8)
 
-        ax2.set_xlabel('X')
-        ax2.set_ylabel('Y')
-        ax2.set_title('XY Plane View (Top View)')
+        ax2.set_xlabel('X', fontsize=16)
+        ax2.set_ylabel('Y', fontsize=16)
+        ax2.set_title('XY Plane View (Top View)', fontsize=20)
         ax2.grid(True, alpha=0.3)
         ax2.set_aspect('equal')
         ax2.set_xlim([-self.spiral.R_outer*1.1, self.spiral.R_outer*1.1])
@@ -217,9 +217,9 @@ class SpiralPlotter:
         ax3.scatter(x_inner[sample_indices_xz], z_inner[sample_indices_xz],
                     c='red', s=30, alpha=0.8, zorder=5)
 
-        ax3.set_xlabel('X')
-        ax3.set_ylabel('Z (Height)')
-        ax3.set_title('XZ Plane View (Side View)')
+        ax3.set_xlabel('X', fontsize=16)
+        ax3.set_ylabel('Z (Height)', fontsize=16)
+        ax3.set_title('XZ Plane View (Side View)', fontsize=20)
         ax3.grid(True, alpha=0.3)
         ax3.set_aspect('equal')
         ax3.set_xlim([-self.spiral.R_outer*1.1, self.spiral.R_outer*1.1])
@@ -236,9 +236,9 @@ class SpiralPlotter:
             ax4.add_patch(inner)
 
         ax4.set_aspect('equal')
-        ax4.set_title("XY Circle Approximation")
-        ax4.set_xlabel("X")
-        ax4.set_ylabel("Y")
+        ax4.set_title("XY Circle Approximation", fontsize=20)
+        ax4.set_xlabel("X", fontsize=16)
+        ax4.set_ylabel("Y", fontsize=16)
         max_radius = self.spiral.R_outer
         ax4.set_xlim(-max_radius - 1, max_radius + 1)
         ax4.set_ylim(-max_radius - 1, max_radius + 1)
@@ -258,7 +258,7 @@ class SpiralPlotter:
         fig.legend(handles=legend_elements, 
                 loc='upper left', 
                 bbox_to_anchor=(0.01, 0.99),
-                fontsize=10,
+                fontsize=20,
                 frameon=True,
                 fancybox=False,
                 shadow=False,
@@ -274,7 +274,7 @@ class SpiralPlotter:
         phase_deg = self.spiral.phase_offset * 180 / np.pi
         fig.suptitle(f'Double Conical Spiral - Outer R: {self.spiral.R_outer}, Inner R: {self.spiral.R_inner}, '
                     f'Height: {self.spiral.h}, Turns: {self.spiral.n*self.spiral.h/(2*np.pi):.1f}, Phase: {phase_deg:.0f}°',
-                    fontsize=16)
+                    fontsize=26)
         # Figure-style caption
         fig.text(0.5, 0.02, "Figure: 3D spiral visualization for aligned spirals in all planes with additional XY circle approximation.",
                 ha='center', va='bottom', fontsize=9)

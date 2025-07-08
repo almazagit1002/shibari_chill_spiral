@@ -1,247 +1,483 @@
-#!/usr/bin/env python3
-"""
-Simplified Automated Report Generator for Double Conical Spiral Analysis
-Generates streamlined PDF reports with essential findings and visualizations
-"""
-
 import os
 import yaml
 import numpy as np
-from datetime import datetime
-from matplotlib.backends.backend_pdf import PdfPages
+from pylatex import Document, Section, Subsection, Command, Package, NewPage, Itemize, Enumerate
+from pylatex.base_classes import Environment
+from pylatex.table import Tabular, Table
+from pylatex.utils import bold, NoEscape
+from pylatex import Figure, SubFigure
+from pylatex.package import Package
+from pylatex.tikz import TikZ, Axis, Plot
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
-import matplotlib.patches as patches
 from spiral_calculations import DoubleConicalSpiral
 from spiral_plots import SpiralPlotter
 
-class SpiralReportGenerator:
-    """Generates simplified PDF reports for spiral analysis"""
+class StoryDrivenLatexReportGenerator:
+    """Generates narrative-focused LaTeX PDF reports for spiral analysis"""
     
     def __init__(self, output_dir="reports"):
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
         
-        # Report styling
-        self.title_color = '#2c3e50'
-        self.header_color = '#34495e'
-        self.accent_color = '#3498db'
-        self.bg_color = '#f8f9fa'
+        # Initialize LaTeX document with custom styling
+        geometry_options = {
+            "head": "40pt",
+            "margin": "0.8in",
+            "bottom": "0.8in",
+            "includeheadfoot": True
+        }
         
-    def create_title_page(self, pdf_pages):
+        self.doc = Document(geometry_options=geometry_options)
+        self._setup_document()
+        
+    def _setup_document(self):
+        """Setup LaTeX document with packages and styling"""
+        # Add necessary packages
+        self.doc.packages.append(Package('xcolor'))
+        self.doc.packages.append(Package('graphicx'))
+        self.doc.packages.append(Package('booktabs'))
+        self.doc.packages.append(Package('array'))
+        self.doc.packages.append(Package('longtable'))
+        self.doc.packages.append(Package('fancyhdr'))
+        self.doc.packages.append(Package('titlesec'))
+        self.doc.packages.append(Package('tcolorbox'))
+        self.doc.packages.append(Package('amsmath'))
+        self.doc.packages.append(Package('enumitem'))
+        
+        # Define custom colors
+        self.doc.preamble.append(Command('definecolor', arguments=['titlecolor', 'HTML', '2c3e50']))
+        self.doc.preamble.append(Command('definecolor', arguments=['headercolor', 'HTML', '34495e']))
+        self.doc.preamble.append(Command('definecolor', arguments=['accentcolor', 'HTML', '3498db']))
+        self.doc.preamble.append(Command('definecolor', arguments=['storycolor', 'HTML', '27ae60']))
+        self.doc.preamble.append(Command('definecolor', arguments=['bgcolor', 'HTML', 'f8f9fa']))
+        
+        # Custom title formatting
+        self.doc.preamble.append(NoEscape(r'''
+            \titleformat{\section}
+              {\Large\bfseries\color{titlecolor}}
+              {\thesection}{1em}{}
+            \titleformat{\subsection}
+              {\large\bfseries\color{headercolor}}
+              {\thesubsection}{1em}{}
+        '''))
+        
+        # Custom tcolorbox styles
+        self.doc.preamble.append(NoEscape(r'''
+            \newtcolorbox{storybox}[1][]{
+              colback=bgcolor,
+              colframe=storycolor,
+              coltitle=white,
+              fonttitle=\bfseries,
+              title=#1,
+              rounded corners
+            }
+            \newtcolorbox{chapterbox}[1][]{
+              colback=white,
+              colframe=accentcolor,
+              coltitle=white,
+              fonttitle=\bfseries,
+              title=#1,
+              rounded corners,
+              boxrule=2pt
+            }
+        '''))
+    
+    def create_title_page(self):
         """Create professional title page"""
-        fig, ax = plt.subplots(figsize=(8.5, 11))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-        
-        # Title
-        ax.text(0.5, 0.75, 'DOUBLE CONICAL SPIRAL', 
-                fontsize=28, fontweight='bold', ha='center', 
-                color=self.title_color, transform=ax.transAxes)
-        ax.text(0.5, 0.70, 'ANALYSIS REPORT', 
-                fontsize=28, fontweight='bold', ha='center', 
-                color=self.title_color, transform=ax.transAxes)
+        self.doc.append(NoEscape(r'\begin{center}'))
+
+        # Main title
+        self.doc.append(NoEscape(r'\vspace*{2cm}'))
+        self.doc.append(NoEscape(r'{\Huge\bfseries\color{titlecolor} DOUBLE CONICAL SPIRAL}'))
+        self.doc.append(NoEscape(r'\\[0.5cm]'))
+        # FIXED: Removed extra \\[1cm] that was causing the error
         
         # Subtitle
-        ax.text(0.5, 0.62, 'Simplified Analysis of Spiral Configurations', 
-                fontsize=16, ha='center', style='italic',
-                color=self.header_color, transform=ax.transAxes)
-        
-        # Date and time
-        timestamp = datetime.now().strftime("%B %d, %Y at %H:%M")
-        
-        
-        # Add decorative elements
-        rect = Rectangle((0.1, 0.35), 0.8, 0.02, 
-                        facecolor=self.accent_color, alpha=0.8)
-        ax.add_patch(rect)
-        
-        # Analysis methods
-        methods_text = """
-        CONTENTS:
-        
-        • Configuration Parameters Summary
-        • Configuration Comparison Table
-        • 3D Visualization and Projections
-        • Annular Net Approximations
-        """
-        
-        ax.text(0.5, 0.25, methods_text, 
-                fontsize=11, ha='center', va='top',
-                color=self.header_color, transform=ax.transAxes,
-                bbox=dict(boxstyle="round,pad=0.3", 
-                         facecolor=self.bg_color, alpha=0.8))
-        
-        pdf_pages.savefig(fig, bbox_inches='tight')
-        plt.close(fig)
+        self.doc.append(NoEscape(r'{\Large\itshape\color{headercolor} Mathematical Perimeter and Physical Net Design}'))
+        self.doc.append(NoEscape(r'\\[2cm]'))
+
+        #  outline in a box
+        self.doc.append(NoEscape(r'\begin{chapterbox}[DESIGN PROCESS]'))
+        with self.doc.create(Enumerate(options=[NoEscape(r'label=Section \arabic*:'), 'leftmargin=2cm'])) as enum:
+            enum.add_item(NoEscape(r'\textbf{Understanding the Spiral Geometry} \\ Configuration parameters and mathematical foundation'))
+            enum.add_item(NoEscape(r'\textbf{Calculating the True Perimeter} \\ Analytical integration vs numerical approximation'))
+            enum.add_item(NoEscape(r'\textbf{Discovering the Circular Approximation} \\ From XZ projection to simplified circular regions'))
+            enum.add_item(NoEscape(r'\textbf{Creating the Annular Net} \\ Transforming geometry into manufacturable nets'))
+            enum.add_item(NoEscape(r'\textbf{Validation and Results} \\ Comparing all methods and final measurements'))
+        self.doc.append(NoEscape(r'\end{chapterbox}'))
+
+        self.doc.append(NoEscape(r'\vfill'))
+        self.doc.append(NoEscape(r'\end{center}'))
+        self.doc.append(NewPage())
+
+    def create_chapter1_parameters(self, configurations):
+        """ Understanding the Spiral Geometry"""
+        with self.doc.create(Section('Understanding the Spiral Geometry')):
+
+            # Introduction box
+            self.doc.append(NoEscape(r'\begin{storybox}[Introduction]'))
+            _text = """
+            We start by establishing the mathematical basis for double conical spirals.
+            Each configuration presents distinct geometric challenges, influenced by variations in radius, height, and structural complexity.
+            These parameters will guide the design process throughout.
+            """
+            self.doc.append(_text.strip())
+            self.doc.append(NoEscape(r'\end{storybox}'))
+
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+
+            # Parameters table
+            with self.doc.create(Table(position='h!')) as table:
+                table.add_caption('Configuration Parameters')
+
+                # Open manual center environment
+                table.append(NoEscape(r'\begin{center}'))
+
+                with table.create(Tabular('|l|c|c|c|c|c|', booktabs=True)) as tabular:
+                    # Header
+                    tabular.add_hline()
+                    tabular.add_row([
+                        bold('Configuration'), bold('Outer R'), bold('Inner R'), 
+                        bold('Height'), bold('Turns'), bold('Struct Lines')
+                    ])
+                    tabular.add_hline()
+
+                    # Data rows
+                    for config in configurations:
+                        params = config['params']
+                        short_name = config['name'].split('.')[1].strip() if '.' in config['name'] else config['name']
+                        tabular.add_row([
+                            short_name,
+                            f"{params['outer_radius']:.2f}",
+                            f"{params['inner_radius']:.2f}",
+                            f"{params['height']:.2f}",
+                            f"{params['num_turns']:.2f}",
+                            f"{params.get('struct_lines', 0):.2f}"
+                        ])
+
+                    tabular.add_hline()
+
+                # Close manual center environment
+                table.append(NoEscape(r'\end{center}'))
+
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+
+    def create_chapter2_perimeter(self, all_results, configurations):
+        """Calculating the True Perimeter"""
+        with self.doc.create(Section('Calculating the True Perimeter')):
+
+            #  narrative
+            self.doc.append(NoEscape(r'\begin{storybox}[The Challenge]'))
+            story_text = r"""
+            A critical step in our structural design is calculating the true perimeter of each double conical spiral—
+            that is, the actual length of material required to construct each spiral path. This perimeter is not trivial
+            to compute due to the complex geometry involving conical tapering, variable radii, and helical motion.
+
+            We apply three distinct methods to approach this problem, each offering a different balance of precision and complexity:
+
+            \begin{itemize}
+                \item \textbf{Analytical Method:} Based on the arc length of a 3D parametric curve, we compute the exact integral:
+                \[
+                    L = \int_0^h \sqrt{\left(\frac{dR}{dz}\right)^2 + \left(R(z) \frac{d\theta}{dz}\right)^2 + 1} \, dz
+                \]
+                where \( R(z) = R_0 \left(1 - \frac{z}{h} \right) \) defines the spiral's decreasing radius with height, and 
+                \( \theta(z) = n z \) captures the angular rotation. This method yields the highest accuracy.
+
+                \item \textbf{Numerical Method:} A discrete sampling approach where the spiral path is broken into thousands of small
+                linear segments in 3D space. We compute the Euclidean distance between points:
+                \[
+                    L \approx \sum_{i=1}^{N-1} \sqrt{ \Delta x_i^2 + \Delta y_i^2 + \Delta z_i^2 }
+                \]
+                This provides a reliable approximation, especially for visual validation.
+
+                \item \textbf{Circular Approximation:} A simplified model that treats each spiral as a series of flat circular arcs in the XY-plane, 
+                ignoring vertical movement. The total length becomes:
+                \[
+                    L = \sum_{i=1}^{N} 2\pi R_i
+                \]
+                where \( R_i \) is the instantaneous radius at each step. This is useful for quick estimations but underestimates the actual path length.
+            \end{itemize}
+
+            Comparing these approaches not only validates our results but also highlights the geometric impact of vertical travel,
+            radius tapering, and angular acceleration on material length.
+            """
+            self.doc.append(NoEscape(story_text.strip()))
+            self.doc.append(NoEscape(r'\end{storybox}'))
+
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+
+            # Results table
+            with self.doc.create(Table(position='h!')) as table:
+                table.add_caption('Perimeter Calculation Results')
+                table.append(NoEscape(r'\begin{center}'))
+
+                with table.create(Tabular('|l|c|c|c|c|c|', booktabs=True)) as tabular:
+                    tabular.add_hline()
+                    tabular.add_row([
+                        bold('Configuration'), bold('Analytical'), bold('Numerical'), 
+                        bold('Circular'), bold('Struct Lines'), bold('Total Length')
+                    ])
+                    tabular.add_hline()
+
+                    for i, result_tuple in enumerate(all_results):
+                        if len(result_tuple) >= 6:
+                            name, comparison, net_length, spiral, flat_circles, config_params = result_tuple[:6]
+                        else:
+                            continue
+
+                        short_name = name.split('.')[1].strip() if '.' in name else name
+                        analytical_total = comparison['analytical']['total']
+                        numerical_total = comparison['numerical']['total']
+                        circular_total = comparison['circular_approximation']['total']
+
+                        config_params = configurations[i]['params']
+                        struct_lines = config_params['height'] * config_params.get('struct_lines', 0)
+                        total_with_struct = analytical_total + struct_lines
+
+                        tabular.add_row([
+                            short_name,
+                            f"{analytical_total:.2f}",
+                            f"{numerical_total:.2f}",
+                            f"{circular_total:.2f}",
+                            f"{struct_lines:.2f}",
+                            f"{total_with_struct:.2f}"
+                        ])
+
+                    tabular.add_hline()
+
+                table.append(NoEscape(r'\end{center}'))
+
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
     
-    def create_configuration_parameters_page(self, pdf_pages, configurations):
-        """Create configuration parameters summary page"""
-        fig, ax = plt.subplots(figsize=(11, 8.5))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-        
-        # Page title
-        ax.text(0.5, 0.95, 'CONFIGURATION PARAMETERS', 
-                fontsize=20, fontweight='bold', ha='center', 
-                color=self.title_color, transform=ax.transAxes)
-        
-        # Create parameters table
-        headers = ['Config', 'Outer R', 'Inner R', 'Height', 'Turns', 'Struct Lines']
-        table_data = []
-        
-        for config in configurations:
-            params = config['params']
-            short_name = config['name'].split('.')[1].strip() if '.' in config['name'] else config['name']
+    def create_chapter3_visualization_story(self, config_name, spiral, flat_circles, config_params):
+        """the Circular Approximation"""
+        with self.doc.create(Section('The Circular Approximation')):
+
+            # Configuration identifier
+            short_name = config_name.split('.')[1].strip() if '.' in config_name else config_name
+            self.doc.append(NoEscape(f'{{\\large\\itshape\\color{{accentcolor}} Configuration: {short_name}}}'))
+            self.doc.append(NoEscape(r'\\[0.5cm]'))
+
+            # Discovery 
+            self.doc.append(NoEscape(r'\begin{storybox}[The Breakthrough]'))
+            discovery_text = f"""
+            When we examine the XZ projection of our spiral geometry, what appears as a complex 3D curve 
+            reveals itself as a series of concentric circles when viewed from the top.
+
+            This insight allows us to:
+            \\begin{{itemize}}
+                \\item Simplify the 3D spiral into manageable circular sections
+                \\item Create annular (ring-shaped) regions between inner and outer spirals
+                \\item Design a flat net pattern that can be manufactured and assembled
+            \\end{{itemize}}
+
+            For \\textbf{{{short_name}}}, we identified \\textbf{{{len(flat_circles)} circular regions}} that approximate
+            the original spiral geometry while maintaining structural integrity.
+
+            By applying this simplification: complex 3D mathematics becomes
+            straightforward 2D circular geometry, perfect for visualization with a close approximation to the spiral.
+            """
+            self.doc.append(NoEscape(discovery_text.strip()))
+            self.doc.append(NoEscape(r'\end{storybox}'))
+
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+
+            # Technical parameters table
+            with self.doc.create(Table(position='h!')) as table:
+                table.add_caption(f'Technical Parameters for {short_name}')
+                table.append(NoEscape(r'\begin{center}'))
+
+                with table.create(Tabular('|l|c|', booktabs=True)) as tabular:
+                    tabular.add_hline()
+                    tabular.add_row([bold('Parameter'), bold('Value')])
+                    tabular.add_hline()
+                    tabular.add_row(['Target Spacing', f"{config_params.get('target_spacing', 1.0):.1f} units"])
+                    tabular.add_row(['Arc Span', f"{config_params.get('arc_span_deg', 180)}°"])
+                    tabular.add_row(['Arc Density', f"{config_params.get('arc_density', 50)} points"])
+                    tabular.add_row(['Circular Regions', f"{len(flat_circles)} layers"])
+                    tabular.add_hline()
+
+                table.append(NoEscape(r'\end{center}'))
+
+            # Generate and include 3D visualization
+            self._generate_and_include_3d_plot(spiral, short_name)
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+    
+    def create_chapter4_net_creation(self, config_name, spiral, flat_circles, config_params, net_length):
+        """Chapter 4: Creating the Annular Net"""
+        with self.doc.create(Section('Creating the Annular Net')):
+
+            short_name = config_name.split('.')[1].strip() if '.' in config_name else config_name
+            self.doc.append(NoEscape(f'{{\\large\\itshape\\color{{accentcolor}} Configuration: {short_name}}}'))
+            self.doc.append(NoEscape(r'\\[0.5cm]'))
+
+            # Net creation 
+            self.doc.append(NoEscape(r'\begin{storybox}[The Practical Aproach]'))
+            net_text = f"""
+            Now comes the practical aproach: transforming our circular approximation into
+            a manufacturable flat pattern -- the annular net.
+
+            \\textbf{{THE NET CREATION PROCESS:}}
+            \\begin{{enumerate}}
+                \\item \\textbf{{ANNULAR REGIONS:}} Each circular layer becomes a ring (annulus) in the flat pattern
+                \\item \\textbf{{CONNECTION PATTERN:}} We create a web of connections between outer and inner
+                    edges within specific angular spans to maintain structural integrity
+                \\item \\textbf{{OPTIMIZED SPACING:}} Points are distributed to achieve uniform material density
+                    with our target spacing of {config_params.get('target_spacing', 1.0):.1f} units
+                \\item \\textbf{{ANGULAR CONTROL:}} Each connection spans {config_params.get('arc_span_deg', 180)}° 
+                    with {config_params.get('arc_density', 50)} connection points for precision
+            \\end{{enumerate}}
+
+            \\textbf{{RESULT:}} The net for {short_name} requires \\textbf{{{net_length:.2f} units}} of connecting
+            material, creating a pattern that can be cut flat and assembled into the 3D spiral.
+
+            This represents the final step from mathematical concept to physical reality.
+            """
+            self.doc.append(NoEscape(net_text.strip()))
+            self.doc.append(NoEscape(r'\end{storybox}'))
+
+            # Generate and include net visualization
+            self._generate_and_include_net_plot(spiral, flat_circles, config_params, short_name, net_length)
+
+            # Manufacturing note
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+            self.doc.append(NoEscape(r'\begin{center}'))
+            self.doc.append(NoEscape(
+                f'{{\\large\\bfseries\\color{{storycolor}} MANUFACTURING READY: {net_length:.2f} units of connecting material in optimized pattern}}'
+            ))
+            self.doc.append(NoEscape(r'\end{center}'))
+    
+    def create_chapter5_conclusion(self, all_results, configurations):
+        """Chapter 5: Validation and Final Results"""
+        with self.doc.create(Section('Validation and Final Results')):
+
+            # Conclusion 
+            self.doc.append(NoEscape(r'\begin{storybox}[Approximation Complete]'))
+            conclusion_text = """
+            Teh approxiamtion from mathematical spiral to manufacturable net is complete.
+            The final validation compares all our methods and confirms the design integrity.
+
+            This comprehensive table shows the complete material requirements for each configuration,
+            validating our approach from theoretical calculation through practical implementation.
+            """
+            self.doc.append(NoEscape(conclusion_text.strip()))
+            self.doc.append(NoEscape(r'\end{storybox}'))
+
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+
+            # Final comprehensive table
+            with self.doc.create(Table(position='h!')) as table:
+                table.add_caption('Complete Material Requirements Analysis')
+                table.append(NoEscape(r'\begin{center}'))
+                with table.create(Tabular('|l|c|c|c|c|c|c|', booktabs=True)) as tabular:
+                    tabular.add_hline()
+                    tabular.add_row([
+                        bold('Config'), bold('Analytical'), bold('Numerical'), 
+                        bold('Circular'), bold('Struct Lines'), bold('Net Length'), bold('Total Material')
+                    ])
+                    tabular.add_hline()
+
+                    for i, result_tuple in enumerate(all_results):
+                        if len(result_tuple) >= 6:
+                            name, comparison, net_length, spiral, flat_circles, config_params = result_tuple[:6]
+                        else:
+                            continue
+
+                        short_name = name.split('.')[1].strip() if '.' in name else name
+                        analytical_total = comparison['analytical']['total']
+                        numerical_total = comparison['numerical']['total']
+                        circular_total = comparison['circular_approximation']['total']
+
+                        config_params = configurations[i]['params']
+                        struct_lines = config_params['height'] * config_params.get('struct_lines', 0)
+                        total_material = analytical_total + struct_lines + net_length
+
+                        tabular.add_row([
+                            short_name,
+                            f"{analytical_total:.2f}",
+                            f"{numerical_total:.2f}",
+                            f"{circular_total:.2f}",
+                            f"{struct_lines:.2f}",
+                            f"{net_length:.4f}",
+                            f"{total_material:.2f}"
+                        ])
+
+                    tabular.add_hline()
+                table.append(NoEscape(r'\end{center}'))
+
+            # Success conclusion
+            self.doc.append(NoEscape(r'\vspace{1cm}'))
+            self.doc.append(NoEscape(r'\begin{storybox}[SUCCESS: Complete Design Validation Achieved!]'))
+            success_text = """
+            From mathematical perimeter through circular approximation to manufacturable nets,
+            this demonstrates how complex 3D geometry can be transformed into
+            practical manufacturing solutions while maintaining precision and integrity.
+
+            \\textbf{The design is complete.}
+            """
+            self.doc.append(NoEscape(success_text.strip()))
+            self.doc.append(NoEscape(r'\end{storybox}'))
+    
+    def _generate_and_include_3d_plot(self, spiral, short_name):
+        """Generate 3D plot and include it in the document"""
+        try:
+            # Ensure matplotlib is using a non-interactive backend
+            plt.switch_backend('Agg')
             
-            row = [
-                short_name,
-                f"{params['outer_radius']:.2f}",
-                f"{params['inner_radius']:.2f}",
-                f"{params['height']:.2f}",
-                f"{params['num_turns']:.2f}",
-                f"{params.get('struct_lines', 0):.2f}"
-            ]
-            table_data.append(row)
-        
-        # Create table
-        # Create table
-        table = ax.table(cellText=table_data,
-                        colLabels=headers,
-                        cellLoc='center',
-                        loc='center',
-                        bbox=[0.05, 0.2, 0.9, 0.6])
-        
-        # Style the table
-        table.auto_set_font_size(False)
-        table.set_fontsize(10)
-        table.scale(1, 2.5)
-        
-        # Header styling
-        for i in range(len(headers)):
-            table[(0, i)].set_facecolor('#34495e')
-            table[(0, i)].set_text_props(weight='bold', color='white')
-        
-        # Alternate row colors
-        for i in range(1, len(table_data) + 1):
-            for j in range(len(headers)):
-                if i % 2 == 0:
-                    table[(i, j)].set_facecolor('#f8f9fa')
-                else:
-                    table[(i, j)].set_facecolor('white')
-        
-        
-        
-        pdf_pages.savefig(fig, bbox_inches='tight')
-        plt.close(fig)
-    
-    def create_comparison_table_page(self, pdf_pages, all_results, configurations):
-        """Create comprehensive comparison table"""
-        fig, ax = plt.subplots(figsize=(11, 8.5))  # Landscape for table
-        ax.axis('off')
-        
-        # Title
-        ax.text(0.5, 0.95, 'CONFIGURATION COMPARISON TABLE', 
-                fontsize=16, fontweight='bold', ha='center', 
-                color=self.title_color, transform=ax.transAxes)
-        
-        # Prepare table data
-        headers = ['Configuration', 'Analytical', 'Numerical', 'Circular', 'Struct Lines', 'Net Length', 'Total w/ Struct']
-        table_data = []
-        analytical_totals = []
-        
-        for i, result_tuple in enumerate(all_results):
-            if len(result_tuple) == 3:
-                name, comparison, net_length = result_tuple
-            elif len(result_tuple) == 6:
-                name, comparison, net_length, spiral, flat_circles, config_params = result_tuple
+            plotter = SpiralPlotter(spiral)
+            fig_3d, axes = plotter.plot_combined(show_cone=True)
+            
+            # Save plot with error handling
+            plot_filename = os.path.join(self.output_dir,f'3d_plot_{short_name.replace(" ", "_").replace("/", "_")}.png')
+            fig_3d.savefig(plot_filename, dpi=300, bbox_inches='tight')
+            plt.close(fig_3d)
+            
+            # Verify file exists before including
+            if os.path.exists(plot_filename):
+                with self.doc.create(Figure(position='h!')) as fig:
+                    fig.add_image(f'3d_plot_{short_name.replace(" ", "_").replace("/", "_")}.png', width=NoEscape(r'0.8\textwidth'))
+                    fig.add_caption(f'3D Spiral Geometry - {short_name}. Observe the XZ projection (right) showing circular approximation.')
             else:
-                raise ValueError(f"Unexpected tuple structure in all_results: {len(result_tuple)} elements")
-            
-            short_name = name.split('.')[1].strip() if '.' in name else name
-            analytical_total = comparison['analytical']['total']
-            numerical_total = comparison['numerical']['total']
-            circular_total = comparison['circular_approximation']['total']
-            
-            analytical_totals.append(analytical_total)
-            
-            config_params = configurations[i]['params']
-            struct_lines = config_params['height'] * config_params.get('struct_lines', 0)
-            total_with_struct = analytical_total + struct_lines
-            
-            row = [
-                short_name,
-                f"{analytical_total:.2f}",
-                f"{numerical_total:.2f}",
-                f"{circular_total:.2f}",
-                f"{struct_lines:.2f}",
-                f"{net_length:.4f}",
-                f"{total_with_struct:.2f}"
-            ]
-            table_data.append(row)
-        
-        # Create table
-        table = ax.table(cellText=table_data,
-                        colLabels=headers,
-                        cellLoc='center',
-                        loc='center',
-                        bbox=[0.05, 0.2, 0.9, 0.6])
-        
-        table.auto_set_font_size(False)
-        table.set_fontsize(8)
-        table.scale(1, 2)
-        
-        for i in range(len(headers)):
-            table[(0, i)].set_facecolor('#34495e')
-            table[(0, i)].set_text_props(weight='bold', color='white')
-        
-        for i in range(1, len(table_data) + 1):
-            for j in range(len(headers)):
-                table[(i, j)].set_facecolor('#f8f9fa' if i % 2 == 0 else 'white')
-        
-        # ✅ Save the page to the PDF
-        pdf_pages.savefig(fig, bbox_inches='tight')
-        plt.close(fig)
-
+                self.doc.append(NoEscape(f"[3D Plot for {short_name}: Image file not created]"))
+                
+        except Exception as e:
+            print(f"Error generating 3D plot for {short_name}: {str(e)}")
+            self.doc.append(NoEscape(f"[3D Plot generation failed for {short_name}: {str(e)}]"))
     
-    def embed_visualization_pages(self, pdf_pages, config_name, spiral, flat_circles, config_params):
-        """Embed visualization plots in the report with figure captions"""
-
-        plotter = SpiralPlotter(spiral)
-
-        # === 1. 3D Spiral Visualization ===
-        fig_combined, axes = plotter.plot_combined(show_cone=True)
-        fig_combined.set_size_inches(6.5, 5.0)  # Resize for report
-
-        # Add a figure caption below the plot
-        fig_combined.subplots_adjust(bottom=0.2)  # Make space for caption
-        fig_combined.suptitle("")  # Remove original title
-        
-        pdf_pages.savefig(fig_combined, bbox_inches='tight')
-        plt.close(fig_combined)
-
-        # === 2. Annular Net Visualization ===
-        fig_net = plotter.plot_all_annular_regions_net(
-            flat_circles,
-            config_params.get('target_spacing', 1.0),
-            config_params.get('arc_span_deg', 180),
-            config_params.get('arc_density', 50)
-        )
-        fig_net.set_size_inches(6.5, 5.0)  # Resize for report
-
-        fig_net.subplots_adjust(bottom=0.2)
-        fig_net.suptitle("")
-        
-
-        pdf_pages.savefig(fig_net, bbox_inches='tight')
-        plt.close(fig_net)
-
+    def _generate_and_include_net_plot(self, spiral, flat_circles, config_params, short_name, net_length):
+        """Generate net plot and include it in the document"""
+        try:
+            # Ensure matplotlib is using a non-interactive backend
+            plt.switch_backend('Agg')
+            
+            plotter = SpiralPlotter(spiral)
+            fig_net = plotter.plot_all_annular_regions_net(
+                flat_circles,
+                config_params.get('target_spacing', 1.0),
+                config_params.get('arc_span_deg', 180),
+                config_params.get('arc_density', 50)
+            )
+            
+            # Save plot with error handling
+            plot_filename = os.path.join(self.output_dir,f'net_plot_{short_name.replace(" ", "_").replace("/", "_")}.png')
+            fig_net.savefig(plot_filename, dpi=300, bbox_inches='tight')
+            plt.close(fig_net)
+            
+            # Verify file exists before including
+            if os.path.exists(plot_filename):
+                with self.doc.create(Figure(position='h!')) as fig:
+                    fig.add_image(f'net_plot_{short_name.replace(" ", "_").replace("/", "_")}.png', width=NoEscape(r'0.8\textwidth'))
+                    fig.add_caption(f'Annular Net Pattern - {short_name}. Flat manufacturing pattern for 3D spiral assembly.')
+            else:
+                self.doc.append(NoEscape(f"[Net Plot for {short_name}: Image file not created]"))
+                
+        except Exception as e:
+            print(f"Error generating net plot for {short_name}: {str(e)}")
+            self.doc.append(NoEscape(f"[Net Plot generation failed for {short_name}: {str(e)}]"))
     
-    def generate_full_report(self, configurations_file='config.yaml'):
-        """Generate simplified PDF report"""
-        print("Generating simplified spiral analysis report...")
+    def generate_story_report(self, configurations_file='config.yaml'):
+        """Generate the complete  LaTeX report"""
+        print("Generating LaTeX spiral analysis report...")
         
         # Load configurations
         try:
@@ -255,53 +491,94 @@ class SpiralReportGenerator:
         # Process all configurations
         all_results = []
         for config in configurations:
-            spiral = DoubleConicalSpiral(**config['params'])
-            comparison = spiral.compare_all_methods(num_points_numerical=1000, num_slices_circular=100)
-            flat_circles = spiral.get_xy_circles_for_visualization()
-            net_length = spiral.calculate_net_length_angles(flat_circles)
-            
-            # Store with 6-tuple structure for internal use
-            all_results.append((config['name'], comparison, net_length, spiral, flat_circles, config['params']))
+            try:
+                spiral = DoubleConicalSpiral(**config['params'])
+                comparison = spiral.compare_all_methods(num_points_numerical=1000, num_slices_circular=100)
+                flat_circles = spiral.get_xy_circles_for_visualization()
+                net_length = spiral.calculate_net_length_angles(flat_circles)
+                
+                all_results.append((config['name'], comparison, net_length, spiral, flat_circles, config['params']))
+            except Exception as e:
+                print(f"Error processing configuration {config['name']}: {str(e)}")
+                continue
         
-        # Generate report
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_filename = os.path.join(self.output_dir, f"spiral_analysis_report_{timestamp}.pdf")
+        if not all_results:
+            print("No configurations were successfully processed!")
+            return None
         
-        with PdfPages(report_filename) as pdf_pages:
-            # Title page
-            self.create_title_page(pdf_pages)
-            
-            # Configuration parameters page
-            self.create_configuration_parameters_page(pdf_pages, configurations)
-            
-            # Comparison table
-            self.create_comparison_table_page(pdf_pages, all_results, configurations)
-            
-            # Visualization pages for each configuration
-            for name, comparison, net_length, spiral, flat_circles, config_params in all_results:
-                self.embed_visualization_pages(pdf_pages, name, spiral, flat_circles, config_params)
+        # Generate report content
+        self.create_title_page()
+        self.create_chapter1_parameters(configurations)
+        self.doc.append(NewPage())
         
-        print(f"Report generated successfully: {report_filename}")
-        return report_filename
+        self.create_chapter2_perimeter(all_results, configurations)
+        self.doc.append(NewPage())
+        
+        # Chapters 3 & 4 for each configuration
+        for name, comparison, net_length, spiral, flat_circles, config_params in all_results:
+            self.create_chapter3_visualization_story(name, spiral, flat_circles, config_params)
+            self.doc.append(NewPage())
+            self.create_chapter4_net_creation(name, spiral, flat_circles, config_params, net_length)
+            self.doc.append(NewPage())
+        
+        self.create_chapter5_conclusion(all_results, configurations)
+        
+        # Generate PDF
+        
+        report_filename = f"spiral_design"
+        
+        try:
+            self.doc.generate_pdf(os.path.join(self.output_dir, report_filename), clean_tex=False)
+            print(f"Report generated successfully: {os.path.join(self.output_dir, report_filename)}.pdf")
+            return f"{os.path.join(self.output_dir, report_filename)}.pdf"
+        except Exception as e:
+            print(f"Error generating PDF: {str(e)}")
+            # Save the .tex file for manual debugging
+            try:
+                tex_filename = os.path.join(self.output_dir, f"{report_filename}.tex")
+                self.doc.generate_tex(tex_filename)
+                print(f"LaTeX source saved as: {tex_filename}")
+            except Exception as tex_e:
+                print(f"Could not save LaTeX source: {str(tex_e)}")
+            return None
 
 
-def generate_report():
-    """Main function to generate the simplified report"""
-    generator = SpiralReportGenerator()
-    report_file = generator.generate_full_report()
+def generate_story_report():
+    """Main function to generate LaTeX report"""
+    generator = StoryDrivenLatexReportGenerator()
+    report_file = generator.generate_story_report()
     
     if report_file:
-        print(f"\n{'='*60}")
-        print("SIMPLIFIED REPORT GENERATION COMPLETE")
-        print(f"{'='*60}")
+        print(f"\n{'='*70}")
+        print(" LATEX REPORT GENERATION COMPLETE")
+        print(f"{'='*70}")
         print(f"Report saved as: {report_file}")
-        print(f"Report size: {os.path.getsize(report_file) / 1024 / 1024:.2f} MB")
-        print("\nReport includes:")
-        print("• Configuration parameters summary")
-        print("• Comprehensive comparison table")
-        print("• 3D visualizations for each configuration")
-        print("• Annular net approximations")
+        try:
+            print(f"Report size: {os.path.getsize(report_file) / 1024 / 1024:.2f} MB")
+        except:
+            print("Report size: [File size unavailable]")
+        print("\nThe File Includes:")
+        print("📖 Chapter 1: Understanding the Spiral Geometry")
+        print("🧮 Chapter 2: Calculating the True Perimeter") 
+        print("🔍 Chapter 3: Discovering the Circular Approximation")
+        print("🏭 Chapter 4: Creating the Annular Net")
+        print("✅ Chapter 5: Validation and Final Results")
+        print("\nNarrative Flow:")
+        print("Mathematical Foundation → Perimeter Calculation → XZ Projection Analysis")
+        print("→ Circular Approximation → Annular Net Design → Manufacturing Validation")
+        print("\nNote: Requires LaTeX installation and pylatex package")
+        print("Install with: pip install pylatex")
+    else:
+        print("\n" + "="*70)
+        print("REPORT GENERATION FAILED")
+        print("="*70)
+        print("Check the error messages above for details.")
+        print("Common issues:")
+        print("- Missing dependencies (spiral_calculations, spiral_plots)")
+        print("- LaTeX installation problems")
+        print("- File permission issues")
+        print("- Plot generation failures")
 
 
 if __name__ == "__main__":
-    generate_report()
+    generate_story_report()
